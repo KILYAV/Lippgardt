@@ -64,20 +64,29 @@ private:
     double R;
     UINT ID;
 
+    static CManipulator Error;
+
 public:
-    CManipulator(int id, int r, CPoint point) : CPoint(point), R(r), ID(id) {};
+    CManipulator(int id, double r, CPoint point) : CPoint(point), R(r), ID(id) {};
     CManipulator() : CManipulator(GetInt("ID:="), GetDouble("R:="), CPoint("Y:=", "\nEnter position, range and ID manipulator, or press enter for a random choice\nX:=")) {};
 
     UINT GetID() { return ID; };
 
-    void Move(CPoint point) { x = point.x, y = point.y; };
-    void Print();
+    void Move(CPoint& point) { x = point.x, y = point.y; };
+    CManipulator& Print(CPoint&);
 
     double Range(CPoint);
+
+    friend CManipulator& ChangCManipulator(CManipulator&, CManipulator&, CPoint);
 };
-void CManipulator::Print()
+CManipulator& CManipulator::Print(CPoint& point)
 {
-    cout << "\nPosition of the manipulator #" << ID << ": X:=" << x << " Y:=" << y;
+    if (this == &Error)
+        cout << "\nThere are no manipulators capable of doing work on the point:" << "X:=" << point.x << " Y:=" << point.y;
+    else
+        cout << "\nManipulator #" << ID << " is able to perform work on the point: " << ": X:=" << point.x << " Y:=" << point.y;
+
+    return *this;
 }
 double CManipulator::Range(CPoint point)
 {
@@ -90,25 +99,24 @@ double CManipulator::Range(CPoint point)
 
 CManipulator& ChangCManipulator(CManipulator& manipulator0, CManipulator& manipulator1, CPoint point)
 {
-    UINT range[2] = { manipulator0.Range(point), manipulator1.Range(point) };
-    if (range[0] > range[1])
+    double range[2] = { manipulator0.Range(point), manipulator1.Range(point) };
+    if (INFINITY == range[0] && INFINITY == range[1])
+        return CManipulator::Error;
+    else if (range[0] > range[1])
         return manipulator0;
     else
         return manipulator1;
 };
 
+CManipulator CManipulator::Error(-1, NAN, {NAN,NAN});
 
 constexpr UINT maxPoint = 5;
 
 int main()
 {
-    CManipulator manipulator[2] = {};
-    CPoint point[maxPoint] = {};
+    CManipulator manipulator[2];
+    CPoint point[maxPoint];
 
     for (UINT index = 0; index < maxPoint; index++)
-    {
-        ChangCManipulator(manipulator[0], manipulator[1], point[index]).Move(point[index]);
-        manipulator[0].Print();
-        manipulator[1].Print();
-    }
+        ChangCManipulator(manipulator[0], manipulator[1], point[index]).Print(point[index]);
 }
